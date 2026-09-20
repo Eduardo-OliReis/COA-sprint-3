@@ -1,0 +1,88 @@
+import time
+from machine import Pin, I2C
+
+# LEDS
+led_verde = Pin(9, Pin.OUT)
+led_amarelo = Pin(5, Pin.OUT)
+led_vermelho = Pin(2, Pin.OUT)
+
+# LCD
+i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=100000)
+
+class LCD1602Direct:
+    def __init__(self, i2c, addr=0x27):
+        self.i2c = i2c
+        self.addr = addr
+        for cmd in [0x33, 0x32, 0x28, 0x0C, 0x06, 0x01]:
+            self._cmd(cmd)
+            time.sleep_ms(5)
+
+    def _send(self, data, mode):
+        high = mode | (data & 0xF0) | 0x08
+        low = mode | ((data << 4) & 0xF0) | 0x08
+        self.i2c.writeto(self.addr, bytes([high | 0x04, high, low | 0x04, low]))
+
+    def _cmd(self, cmd):
+        self._send(cmd, 0)
+
+    def clear(self):
+        self._cmd(0x01)
+        self._cmd(0x02) 
+        time.sleep_ms(2)
+
+    def set_cursor(self, col, row):
+        addr = 0x00 if row == 0 else 0x40
+        self._cmd(0x80 | (addr + col))
+
+    def write(self, text):
+        for char in text:
+            self._send(ord(char), 1)
+
+#liga o lcd
+time.sleep(0.1)
+devices = i2c.scan()
+addr = devices[0] if devices else 0x27
+lcd = LCD1602Direct(i2c, addr)
+
+#desliga os leds
+def desligar_leds():
+    led_verde.value(0)
+    led_amarelo.value(0)
+    led_vermelho.value(0)
+
+#processa os dados 
+def processar_sessao_recarga(geracao, consumo):
+    energia_disponivel = geracao - consumo
+    desligar_leds()
+
+    if energia_disponivel >= 1000:
+        status_texto = "AUTORIZADO: SIM"
+        led_verde.value(1)
+    elif energia_disponivel >= 0:
+        status_texto = "AUTORIZADO: SIM"
+        led_amarelo.value(1)
+    else:
+        status_texto = "AUTORIZADO: NAO"
+        led_vermelho.value(1)
+
+   
+    lcd.clear()
+    
+    # linha 1
+    lcd.set_cursor(0, 0)
+    lcd.write(f"G:{geracao}W C:{consumo}W")
+
+    # linha 2
+    lcd.set_cursor(0, 1)
+    lcd.write(status_texto)
+
+    time.sleep(10)
+
+    lcd.clear()
+    time.sleep(0.5)
+
+cenarios = [
+    {"geracao": 4000, "consumo": 1500},
+    {"geracao": 1800, "consumo": 1500},
+    {"geracao": 1000, "consumo": 1800}
+]
