@@ -1,9 +1,67 @@
-Sistema de Monitoramento de Recarga Inteligente (MicroPython)Este projeto implementa um sistema de controle e monitoramento de recarga baseado em saldo energético (geração vs. consumo), desenvolvido em MicroPython para microcontroladores como Raspberry Pi Pico ou ESP32.O sistema avalia a energia disponível em tempo real, indica a autorização do processo por meio de LEDs de sinalização e exibe os dados operacionais em um display LCD 16x2 via I2C.🛠️ Hardware NecessárioMicrocontrolador: Raspberry Pi Pico, ESP32 ou similar compatível com MicroPython.Display: LCD 1602 com módulo I2C (Endereço padrão 0x27).Sinalização:1x LED Verde1x LED Amarelo1x LED Vermelho3x Resistores de 220ΩOutros: Protoboard e jumpers.🔌 Esquema de Conexões (Pinagem)ComponentePino do ComponentePino no MicrocontroladorDisplay LCD 1602 (I2C)SDAGP0SCLGP1VCC5V / VBUSGNDGNDLED VerdeAnodo (+)GP9LED AmareloAnodo (+)GP5LED VermelhoAnodo (+)GP2Nota: Conecte o catodo (-) de cada LED ao GND com um resistor de 220Ω.🚦 Regras de Negócio e SinalizaçãoA autorização de recarga é calculada pela fórmula:$$\text{Energia Disponível} = \text{Geração} - \text{Consumo}$$Verde (Sobra $\ge$ 1000W): Recarga AUTORIZADA. Excesso substancial de energia solar/renovável.Amarelo (Sobra entre 0W e 999W): Recarga AUTORIZADA. Geração suficiente para cobrir o consumo, mas com pouca margem.Vermelho (Sobra $<0$W): Recarga NÃO AUTORIZADA. O consumo supera a geração atual.💻 Estrutura do CódigoO projeto conta com um driver nativo embutido para o display LCD 1602 I2C (LCD1602Direct), dispensando a instalação de bibliotecas externas adicionais.Fluxo da Função Principal:Pythonprocessar_sessao_recarga(geracao, consumo)
-Calcula a energia disponível.Atualiza o estado dos LEDs.Limpa e atualiza o display LCD com o formato:Linha 1: G:<geracao>W C:<consumo>WLinha 2: AUTORIZADO: SIM ou AUTORIZADO: NAOMantém a exibição por 10 segundos antes da próxima leitura.🚀 Como ExecutarInstale o firmware do MicroPython no seu microcontrolador.Abra um IDE compatível (como o Thonny IDE).Conecte a placa ao computador.Salve o código principal como main.py na raiz do microcontrolador.Execute o arquivo ou reinicie a placa.🧪 Cenários de TestePara simular o comportamento do sistema, chame a função passando diferentes cenários:Python# Cenário 1: Alta geração (LED Verde / Autorizado)
-processar_sessao_recarga(geracao=4000, consumo=1500)
+<div align="center">
 
-# Cenário 2: Margem estreita (LED Amarelo / Autorizado)
-processar_sessao_recarga(geracao=1800, consumo=1500)
+# ⚡ EV Smart Charge Monitor
 
-# Cenário 3: Déficit de energia (LED Vermelho / Não Autorizado)
-processar_sessao_recarga(geracao=1000, consumo=1800)
+  **Sistema Inteligente de Controle de Recarga de Veículos Elétricos em MicroPython**
+
+  [![MicroPython](https://img.shields.io/badge/MicroPython-1.20%2B-blue.svg?logo=python&logoColor=white)](https://micropython.org/)
+  [![Hardware](https://img.shields.io/badge/Hardware-Raspberry%20Pi%20Pico%20%7C%20ESP32-red.svg?logo=raspberrypi&logoColor=white)](#-hardware-necessário)
+  [![Display](https://img.shields.io/badge/Display-LCD%201602%20I2C-green.svg)](#-esquema-de-ligação)
+  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+  <p align="center">
+    <a href="#-sobre-o-projeto">Sobre</a> •
+    <a href="#-funcionalidades">Funcionalidades</a> •
+    <a href="#-esquema-de-ligação">Hardware</a> •
+    <a href="#-regras-de-negócio">Regras de Negócio</a> •
+    <a href="#-como-executar">Como Executar</a>
+  </p>
+
+---
+
+</div>
+
+## 📌 Sobre o Projeto
+
+O **EV Smart Charge Monitor** é um sistema embarcado para gerenciamento e tomada de decisão sobre recargas elétricas baseado no **saldo energético em tempo real** ($\text{Geração} - \text{Consumo}$). 
+
+Desenvolvido em **MicroPython**, o projeto é ideal para sistemas fotovoltaicos (energia solar) e microredes residenciais, garantindo que a recarga só ocorra quando houver disponibilidade de energia de fonte limpa/gerada localmente.
+
+---
+
+## 🚀 Funcionalidades
+
+- 🔋 **Cálculo de Balanço Energético:** Analisa dinamicamente o saldo entre a geração solar e o consumo da rede.
+- 🚥 **Sinalização Visual Inteligente:** Três níveis de status via LEDs (Verde, Amarelo e Vermelho).
+- 📟 **Driver LCD I2C Nativo:** Controle direto do display LCD 1602 embutido no próprio código, sem necessidade de bibliotecas externas adicionais.
+- 🔄 **Modo de Simulação em Cenários:** Processa múltiplos perfis de geração e consumo sequencialmente.
+
+---
+
+## 🛠️ Hardware Necessário
+
+| Componente | Especificação | Quantidade |
+| :--- | :--- | :---: |
+| **Microcontrolador** | Raspberry Pi Pico / ESP32 | 1 |
+| **Display** | LCD 1602 com Módulo I2C (`0x27`) | 1 |
+| **LEDs** | 5mm (Verde, Amarelo, Vermelho) | 3 |
+| **Resistores** | 220 $\Omega$ | 3 |
+| **Protoboard & Jumpers** | Conexões padrão | 1 |
+
+---
+
+## 🔌 Esquema de Ligação
+
+> [!NOTE]
+> Os pinos abaixo são configurados no código para a **Raspberry Pi Pico**. Caso utilize ESP32, basta ajustar as atribuições dos pinos no início do script.
+
+```text
+               +-----------------------+
+               |  Raspberry Pi Pico    |
+               +-----------------------+
+               |                       |
+   LCD (SDA) <-| GP0               GP9 |-> LED Verde (Anodo)
+   LCD (SCL) <-| GP1               GP5 |-> LED Amarelo (Anodo)
+               |                   GP2 |-> LED Vermelho (Anodo)
+               |                       |
+               +-----------------------+
